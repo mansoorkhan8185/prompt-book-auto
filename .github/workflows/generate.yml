@@ -1,0 +1,26 @@
+name: Generate prompts
+
+on:
+  schedule:
+    - cron: "0 9,14,19 * * *"   # 3 times a day (UTC)
+  workflow_dispatch:             # lets you run it by hand from the Actions tab
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Unpack and install
+        run: |
+          unzip -oq gen.zip
+          npm install --no-audit --no-fund
+      - name: Generate and save prompts
+        run: node run.mjs
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
