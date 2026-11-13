@@ -1,0 +1,37 @@
+name: Move database images to GitHub
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Unpack and install
+        run: |
+          unzip -oq gen.zip
+          npm install --no-audit --no-fund
+      - name: Save images as files
+        run: node migrate.mjs files
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      - name: Commit images
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add images 2>/dev/null || true
+          git diff --cached --quiet || (git commit -m "Move database images to files" && git push)
+      - name: Wait for GitHub, then update the database
+        run: |
+          sleep 20
+          node migrate.mjs apply
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
